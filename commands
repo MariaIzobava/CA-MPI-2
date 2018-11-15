@@ -1,2 +1,1 @@
-mpicc -o run a.c -lm &&
-mpirun -np 5 run
+mpicc -o run a.c -lm && mpirun -np 5 run

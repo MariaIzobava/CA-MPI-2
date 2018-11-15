@@ -42,6 +42,7 @@ int main(int argc, char ** argv)
 		 	send_count += 1;
 		 	send_count_zero = n % ranksize;
 		 }
+		 printf("%d %d\n", send_count, send_count_zero);
 		 for (int i = 1; i < ranksize; i++) {
 			 MPI_Send(&send_count_zero, 1, MPI_INT, i, 98, MPI_COMM_WORLD);
 			 MPI_Send(&send_count, 1, MPI_INT, i, 98, MPI_COMM_WORLD);
@@ -79,13 +80,18 @@ int main(int argc, char ** argv)
 	 int* out;
 	 int* out_k;
 	 int* out_pos;
+	 int* result = malloc(k * sizeof(int));
 	 if (myrank == 0) {
 	 	out = malloc(n * sizeof(int));
-	 	out_k = malloc(n * sizeof(int));
-	 	out_pos = malloc(n * sizeof(int));
-	 	for (int i = 0; i < n; i++){
-	 		out_k[i] = 1;
-	 		out_pos[i] = i;
+	 	out_k = malloc(ranksize * sizeof(int));
+	 	out_pos = malloc(ranksize * sizeof(int));
+	 	out_k[0] = send_count_zero;
+	 	out_pos[0] = 0;
+	 	int offset = send_count_zero;
+	 	for (int i = 1; i < ranksize; i++){
+	 		out_k[i] = send_count;
+	 		out_pos[i] = offset;
+	 		offset += send_count;
 	 	}
 
 	 }
@@ -93,8 +99,9 @@ int main(int argc, char ** argv)
 	 	int s = 0;
 	 	for (int j = 0; j < m; j++)
 	 		s += buff[i * m + j] * v[j];
-	 	MPI_Gatherv(&s, 1, MPI_INT, out, out_k, out_pos, MPI_INT, 0, MPI_COMM_WORLD);
+	 	result[i] = s;
 	 }
+	 MPI_Gatherv(result, k, MPI_INT, out, out_k, out_pos, MPI_INT, 0, MPI_COMM_WORLD);
 
 	 if (myrank == 0) {
 	 	for (int i = 0; i < n; i++)
