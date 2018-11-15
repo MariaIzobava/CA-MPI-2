@@ -38,9 +38,13 @@ int main(int argc, char ** argv)
 		 }
 		 send_count = n / ranksize;
 		 send_count_zero = n / ranksize;
-		 if (n % ranksize > 0) {
+		 if (n % ranksize > 0 && n >= ranksize) {
 		 	send_count += 1;
-		 	send_count_zero = n % ranksize;
+		 	send_count_zero = (n / ranksize + n % ranksize) - (ranksize - 1);
+		 }
+		 if (n < ranksize) {
+		 	send_count_zero = n;
+		 	send_count = 0;
 		 }
 		 printf("%d %d\n", send_count, send_count_zero);
 		 for (int i = 1; i < ranksize; i++) {
@@ -61,22 +65,30 @@ int main(int argc, char ** argv)
 
 	 }
 
+
 	 MPI_Barrier (MPI_COMM_WORLD);  
+	 int* buff;
 	 if (myrank == 0)              
 	 {
-		MPI_Send(matr, send_count_zero * m, MPI_INT, 0, 98, MPI_COMM_WORLD);
-		for (i = 1; i < ranksize; i++)
+	 	buff = malloc(send_count_zero * m * sizeof(int));
+	 	for (int i=0; i<send_count_zero * m; i++)
+	 		buff[i] = matr[i];
+		for (int i = 1; i < ranksize; i++){
 			MPI_Send (matr + (send_count_zero + send_count * (i - 1)) * m, m * send_count, MPI_INT, i, 98, MPI_COMM_WORLD);
+		}
+
 	 } 
+
 	 MPI_Barrier (MPI_COMM_WORLD);
-	 int* buff;
 	 int k;
 	 if (myrank == 0) 
 	 	k = send_count_zero;
 	 else
 	 	k = send_count;
-	 buff = malloc(k * m * sizeof(int));
-	 MPI_Recv(buff, k * m, MPI_INT, 0, 98, MPI_COMM_WORLD, &status);
+	 if (myrank != 0){
+	 	buff = malloc(k * m * sizeof(int));
+	 	MPI_Recv(buff, k * m, MPI_INT, 0, 98, MPI_COMM_WORLD, &status);
+	 }
 	 int* out;
 	 int* out_k;
 	 int* out_pos;
@@ -104,6 +116,8 @@ int main(int argc, char ** argv)
 	 MPI_Gatherv(result, k, MPI_INT, out, out_k, out_pos, MPI_INT, 0, MPI_COMM_WORLD);
 
 	 if (myrank == 0) {
+	 	freopen("output.txt", "w", stdout);
+	 	printf("%d\n", n);
 	 	for (int i = 0; i < n; i++)
 	 		printf("%d ", out[i]);
 	 	printf("\n");
