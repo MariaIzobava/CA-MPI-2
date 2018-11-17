@@ -39,14 +39,18 @@ int main(int argc, char ** argv)
 		 send_count = n / ranksize;
 		 send_count_zero = n / ranksize;
 		 if (n % ranksize > 0 && n >= ranksize) {
-		 	send_count += 1;
-		 	send_count_zero = (n / ranksize + n % ranksize) - (ranksize - 1);
+		 	if (n / ranksize + n % ranksize <= ranksize)
+		 		send_count_zero = n / ranksize + n % ranksize;
+		 	else {
+		 		send_count += 1;
+		 		send_count_zero = (n / ranksize + n % ranksize) - (ranksize - 1);
+		 	}
 		 }
 		 if (n < ranksize) {
 		 	send_count_zero = n;
 		 	send_count = 0;
 		 }
-		 printf("%d %d\n", send_count, send_count_zero);
+		 printf("For processes [1, %d] - %d lines , For process 0 - %d lines \n", ranksize - 1, send_count, send_count_zero);
 		 for (int i = 1; i < ranksize; i++) {
 			 MPI_Send(&send_count_zero, 1, MPI_INT, i, 98, MPI_COMM_WORLD);
 			 MPI_Send(&send_count, 1, MPI_INT, i, 98, MPI_COMM_WORLD);
@@ -78,8 +82,6 @@ int main(int argc, char ** argv)
 		}
 
 	 } 
-
-	 MPI_Barrier (MPI_COMM_WORLD);
 	 int k;
 	 if (myrank == 0) 
 	 	k = send_count_zero;
@@ -105,14 +107,16 @@ int main(int argc, char ** argv)
 	 		out_pos[i] = offset;
 	 		offset += send_count;
 	 	}
-
 	 }
+
+	 double start = MPI_Wtime();
 	 for (int i = 0; i < k; i++) {
 	 	int s = 0;
 	 	for (int j = 0; j < m; j++)
 	 		s += buff[i * m + j] * v[j];
 	 	result[i] = s;
 	 }
+	 double end = MPI_Wtime();
 	 MPI_Gatherv(result, k, MPI_INT, out, out_k, out_pos, MPI_INT, 0, MPI_COMM_WORLD);
 
 	 if (myrank == 0) {
@@ -121,8 +125,10 @@ int main(int argc, char ** argv)
 	 	for (int i = 0; i < n; i++)
 	 		printf("%d ", out[i]);
 	 	printf("\n");
+
+	 	fprintf(stderr, "Calculating time for single process %f\n", end - start);
+
 	 }
 	 MPI_Finalize ();
 	 return 0;
 }
-
