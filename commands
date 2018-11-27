@@ -1,3 +1,1 @@
-g++ -o correct one_process.cpp && ./correct 
-&& mpicc -o run b.c -lm && mpirun --hostfile hostfile -np 5 run && 
-g++ -o check check.cpp && ./check
+g++ -o correct one_process.cpp && ./correct && mpicc -o run b.c -lm && mpirun --hostfile hostfile -np 5 run && g++ -o check check.cpp && ./check

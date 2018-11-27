@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <iostream>
+#include <time.h>
 
 using namespace std;
 
@@ -9,6 +10,8 @@ vector<vector<int> > a;
 vector<int> v;
 
 int main() {
+	
+	srand (time(0));
 	int n, m;
 	int C = 10;
 	freopen("input.txt", "w", stdout);
